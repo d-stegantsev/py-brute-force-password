@@ -25,7 +25,7 @@ def sha256_hash_str(to_hash: str) -> str:
 def check_chunk(start: int, end: int) -> list[str]:
     found: list[str] = []
     for number in range(start, end):
-        password = f"{number:08}"
+        password = f"{number: 08}"
         if sha256_hash_str(password) in PASSWORDS_TO_BRUTE_FORCE:
             found.append(password)
     return found
@@ -33,7 +33,7 @@ def check_chunk(start: int, end: int) -> list[str]:
 
 def brute_force_password() -> None:
     total = 100_000_000
-    workers = multiprocessing.cpu_count() - 4
+    workers = max(1, multiprocessing.cpu_count() - 1)
     chunk_size = total // workers
 
     starts = [i * chunk_size for i in range(workers)]
@@ -41,7 +41,8 @@ def brute_force_password() -> None:
     ends[-1] = total
 
     with ProcessPoolExecutor(workers) as executor:
-        results = executor.map(check_chunk, starts, ends)
+        ranges = list(zip(starts, ends))
+        results = executor.map(lambda args: check_chunk(*args), ranges)
 
     found = [pw for sublist in results for pw in sublist]
     print("Found passwords:", found)
@@ -51,4 +52,4 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
     brute_force_password()
     end_time = time.perf_counter()
-    print(f"Elapsed: {end_time - start_time:.2f} seconds")
+    print(f"Elapsed: {end_time - start_time: .2f} seconds")
